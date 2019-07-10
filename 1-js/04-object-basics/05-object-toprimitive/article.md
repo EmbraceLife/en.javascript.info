@@ -1,6 +1,104 @@
 
 # Object to primitive conversion
 
+### Problems By Code
+
+  ```js run
+  let obj = { };
+  if (obj) { // it is a feature, not really a problem
+    console.log("obj is true in boolean context");
+  };
+  ```
+  ```js run
+  let numObj = {
+    value : 5, 
+  };
+  console.log(numObj.value); // 5
+  console.log(numObj - 1); // numeric context => NaN
+  console.log(Number(numObj)); // numeric context => NaN
+  ```
+  ```js run
+  let strObj = {
+    value : "what would happen?",
+  }
+  console.log(strObj); // object
+  console.log(String(strObj)); // string context => [object Object]
+  console.log(strObj + "yes?"); // string context => [object Object] yes?
+  ```
+  ```js run
+  let num0 = {
+    value0 : 5,
+  };
+
+  let num1 = {
+    value1 : 3,
+  };
+  console.log(num0.value0 > num1.value1); // true
+  console.log(num0 > num1); // numeric context => NaN > NaN => false
+  console.log(NaN > NaN); // false
+  ```
+
+### Solution by Code
+  ```js run
+  let user1 = {
+    name: "John",
+    money: 1000,
+
+    [Symbol.toPrimitive](hint) {
+      console.log(`hint: ${hint}`);
+      return hint == "string" ? this.name : this.money;
+    }
+  };
+
+  console.log(user1); // just object no hint
+  console.log("hello" + user1 ); // hint: default (but treated as number)
+  console.log(`hello ${user1}`); // hint: string
+  console.log(+user1); // hint: number -> 1000
+  console.log(user1 + 500); // hint: default -> 1500
+  alert(user1) // hint: string
+  ```
+  ```js run
+  let user1 = {
+    name: "John",
+    money: 1000,
+
+    // for hint="string", before invention of Symbol
+    toString() {
+      return this.name;
+    },
+
+    // for hint="number" or "default", before invention of Symbol
+    valueOf() {
+      return this.money;
+    }
+
+  };
+
+  console.log(user1); // just object no hint
+  console.log("hello" + user1 ); // hint: default (but treated as number)
+  console.log(`hello ${user1}`); // hint: string
+  console.log(+user1); // hint: number
+  console.log(user1 + 500); // hint: default -> 1500
+  alert(user1) // hint: string
+  ```
+  ```js run
+  let user1 = {
+    name: "John",
+    money: 1000,
+
+    [Symbol.toPrimitive](hint) {
+      console.log(`hint: ${hint}`);
+      if (hint == "string" || "default") {
+        return this.name;
+      };
+    },
+  };
+
+  console.log(user1); 
+  console.log(user1 + 500); // default convert to string -> John500
+  ```
+
+
 What happens when objects are added `obj1 + obj2`, subtracted `obj1 - obj2` or printed using `alert(obj)`?
 
 In that case, objects are auto-converted to primitives, and then the operation is carried out.
@@ -8,9 +106,30 @@ In that case, objects are auto-converted to primitives, and then the operation i
 In the chapter <info:type-conversions> we've seen the rules for numeric, string and boolean conversions of primitives. But we left a gap for objects. Now, as we know about methods and symbols it becomes possible to fill it.
 
 1. All objects are `true` in a boolean context. There are only numeric and string conversions.
+    ```js run
+    let obj = { };
+    if (obj) { // empty object is true in boolean context
+      console.log("obj is true in boolean context");
+    };
+    ```
 2. The numeric conversion happens when we subtract objects or apply mathematical functions. For instance, `Date` objects (to be covered in the chapter <info:date>) can be subtracted, and the result of `date1 - date2` is the time difference between two dates.
+    ```js run
+    let numObj = {
+      value : 5, 
+    };
+    console.log(numObj.value); // 5
+    console.log(numObj - 1); // NaN
+    console.log(Number(numObj)); // NaN
+    ```
 3. As for the string conversion -- it usually happens when we output an object like `alert(obj)` and in similar contexts.
-
+    ```js run
+    let strObj = {
+      value : "what would happen?",
+    }
+    console.log(strObj); // object
+    console.log(String(strObj)); // [object Object] as string
+    console.log(strObj + "yes?"); // [object Object]yes? as string
+    ```
 ## ToPrimitive
 
 We can fine-tune string and numeric conversion, using special object methods.
@@ -22,7 +141,7 @@ There are three variants:
 `"string"`
 : For an object-to-string conversion, when we're doing an operation on an object that expects a string, like `alert`:
 
-    ```js
+    ```js 
     // output
     alert(obj);
 
@@ -48,21 +167,33 @@ There are three variants:
 `"default"`
 : Occurs in rare cases when the operator is "not sure" what type to expect.
 
-    For instance, binary plus `+` can work both with strings (concatenates them) and numbers (adds them), so both strings and numbers would do. Or when an object is compared using `==` with a string, number or a symbol, it's also unclear which conversion should be done.
+  For instance, binary plus `+` can work both with strings (concatenates them) and numbers (adds them), so both strings and numbers would do. Or when an object is compared using `==` with a string, number or a symbol, it's also unclear which conversion should be done.
 
     ```js
     // binary plus
-    let total = car1 + car2;
+    let total = car1 + car2; // not sure which string or number
 
     // obj == string/number/symbol
-    if (user == 1) { ... };
+    if (user == 1) { ... }; // not sure number, string, or symbol
     ```
 
-    The greater/less operator `<>` can work with both strings and numbers too. Still, it uses "number" hint, not "default". That's for historical reasons.
+  The <span style="color:red">greater/less</span> operator `<>` can work with both strings and numbers too. <span style="color:red">Still</span>, it uses "number" hint, not "default". That's for historical reasons.
 
-    In practice, all built-in objects except for one case (`Date` object, we'll learn it later) implement `"default"` conversion the same way as `"number"`. And probably we should do the same.
+  ```js run
+  let num0 = {
+    value0 : 5,
+  };
 
-Please note -- there are only three hints. It's that simple. There is no "boolean" hint (all objects are `true` in boolean context) or anything else. And if we treat `"default"` and `"number"` the same, like most built-ins do, then there are only two conversions.
+  let num1 = {
+    value1 : 3,
+  };
+  console.log(num0.value0 > num1.value1);
+  console.log(num0 > num1); // numeric context 
+  ```
+
+  In practice, all built-in objects except for one case (`Date` object, we'll learn it later) implement `"default"` conversion the same way as `"number"`. And probably we should do the same.
+
+  Please note -- there are only three hints. It's that simple. There is no "boolean" hint (all objects are `true` in boolean context) or anything else. And if we treat `"default"` and `"number"` the same, like most built-ins do, then there are only two conversions.
 
 **To do the conversion, JavaScript tries to find and call three object methods:**
 
@@ -86,20 +217,31 @@ obj[Symbol.toPrimitive] = function(hint) {
 For instance, here `user` object implements it:
 
 ```js run
-let user = {
+let user0 = {
+  name: "John",
+  money: 1000,
+};
+
+let user1 = {
   name: "John",
   money: 1000,
 
   [Symbol.toPrimitive](hint) {
-    alert(`hint: ${hint}`);
-    return hint == "string" ? `{name: "${this.name}"}` : this.money;
+    console.log(`hint: ${hint}`);
+    return hint == "string" ? this.name : this.money;
   }
 };
-
-// conversions demo:
-alert(user); // hint: string -> {name: "John"}
-alert(+user); // hint: number -> 1000
-alert(user + 500); // hint: default -> 1500
+console.log(user0); // object
+console.log("hello" + user0) // hello[object Object]
+console.log(+user0); // NaN
+console.log(user0 + 500); // [object Object]500
+console.log("-----------------");
+console.log(user1); // just object no hint
+alert(user1) // hint: string
+console.log("hello" + user1 ); // hint: default (but treated as number)
+console.log(`hello ${user1}`); // hint: string
+console.log(+user1); // hint: number -> 1000
+console.log(user1 + 500); // hint: default -> 1500
 ```
 
 As we can see from the code, `user` becomes a self-descriptive string or a money amount depending on the conversion. The single method `user[Symbol.toPrimitive]` handles all conversion cases.
@@ -117,13 +259,13 @@ If there's no `Symbol.toPrimitive` then JavaScript tries to find them and try in
 For instance, here `user` does the same as above using a combination of `toString` and `valueOf`:
 
 ```js run
-let user = {
+let user1 = {
   name: "John",
   money: 1000,
 
   // for hint="string"
   toString() {
-    return `{name: "${this.name}"}`;
+    return this.name;
   },
 
   // for hint="number" or "default"
@@ -133,9 +275,13 @@ let user = {
 
 };
 
-alert(user); // toString -> {name: "John"}
-alert(+user); // valueOf -> 1000
-alert(user + 500); // valueOf -> 1500
+console.log("-----------------");
+console.log(user1); // just object no hint
+alert(user1) // hint: string
+console.log("hello" + user1 ); // hint: default (but treated as number)
+console.log(`hello ${user1}`); // hint: string
+console.log(+user1); // hint: number
+console.log(user1 + 500); // hint: default -> 1500
 ```
 
 Often we want a single "catch-all" place to handle all primitive conversions. In this case, we can implement `toString` only, like this:
@@ -149,8 +295,25 @@ let user = {
   }
 };
 
-alert(user); // toString -> John
-alert(user + 500); // toString -> John500
+console.log(user); 
+console.log(user + 500); // toString -> John500
+```
+
+```js run
+let user1 = {
+  name: "John",
+  money: 1000,
+
+  [Symbol.toPrimitive](hint) {
+    console.log(`hint: ${hint}`);
+    if (hint == "string" || "default") {
+      return this.name;
+    };
+  },
+};
+
+console.log(user1); 
+console.log(user1 + 500); // default convert to string -> John500
 ```
 
 In the absence of `Symbol.toPrimitive` and `valueOf`, `toString` will handle all primitive conversions.
@@ -176,39 +339,39 @@ An operation that initiated the conversion gets that primitive, and then continu
 For instance:
 
 - Mathematical operations (except binary plus) perform `ToNumber` conversion:
+    ```js run
+    let obj = {
+      value : 2,
+    };
+    console.log(obj + "Hello");
+    console.log(obj * 2); 
+    ```
 
     ```js run
     let obj = {
-      toString() { // toString handles all conversions in the absence of other methods
-        return "2";
-      }
-    };
+      value : 2,
 
-    alert(obj * 2); // 4, ToPrimitive gives "2", then it becomes 2
+      toString() { // toString handles all conversions in the absence of other methods
+        return String(this.value);
+      },
+    };
+    console.log(obj + 2);
+    console.log(obj * 2); // 4, ToPrimitive gives "2", then it becomes 2
     ```
 
 - Binary plus checks the primitive -- if it's a string, then it does concatenation, otherwise it performs `ToNumber` and works with numbers.
 
-    String example:
-    ```js run
-    let obj = {
-      toString() {
-        return "2";
-      }
-    };
-
-    alert(obj + 2); // 22 (ToPrimitive returned string => concatenation)
-    ```
-
     Number example:
     ```js run
     let obj = {
-      toString() {
-        return true;
-      }
-    };
+      value : 2,
 
-    alert(obj + 2); // 3 (ToPrimitive returned boolean, not string => ToNumber)
+      toString() { // toString handles all conversions in the absence of other methods
+        return this.value != 0 ? true : false;
+      },
+    };
+    console.log(obj + 2);// 3 (ToPrimitive returned boolean, not string => ToNumber)
+    console.log(obj * 4); // 4, 
     ```
 
 
