@@ -44,9 +44,12 @@
     name: "John",
     money: 1000,
 
+    // how object should react to different contexts
     [Symbol.toPrimitive](hint) {
       console.log(`hint: ${hint}`);
-      return hint == "string" ? this.name : this.money;
+      // divide into string and non string contexts
+      // default context usually convert to numeric reaction too
+      return hint == "string" ? this.name : this.money; 
     }
   };
 
@@ -62,12 +65,12 @@
     name: "John",
     money: 1000,
 
-    // for hint="string", before invention of Symbol
+    // string context reaction, before Symbol time
     toString() {
       return this.name;
     },
 
-    // for hint="number" or "default", before invention of Symbol
+    // non-string: numeric or default context, before Symbol time
     valueOf() {
       return this.money;
     }
@@ -88,6 +91,7 @@
 
     [Symbol.toPrimitive](hint) {
       console.log(`hint: ${hint}`);
+      // you can set reaction to default context the same to string context
       if (hint == "string" || "default") {
         return this.name;
       };
@@ -98,6 +102,7 @@
   console.log(user1 + 500); // default convert to string -> John500
   ```
 
+# Original Content
 
 What happens when objects are added `obj1 + obj2`, subtracted `obj1 - obj2` or printed using `alert(obj)`?
 
