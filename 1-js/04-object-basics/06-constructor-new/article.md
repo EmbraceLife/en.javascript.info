@@ -1,5 +1,188 @@
 # Constructor, operator "new"
 
+## My bites
+
+#### Constructor + new => refactor on object creation
+
+Too much repetition
+```js
+let user1 = {
+  name: "Jack",
+  isAdmin: false
+};
+
+let user2 = {
+  name: "John",
+  isAdmin: false
+};
+
+let user3 = {
+  name: "Anne",
+  isAdmin: false
+};
+```
+Refactor is good (lazy)
+```js run
+// any func can be a constructor func
+// conventionally, constructor has first char Capitalized to mark itself up
+function User(name) { 
+  this.name = name;
+  this.isAdmin = false;
+}
+
+// what really makes a func constructor is new
+*!* 
+let user1 = new User("Jack");
+let user2 = new User("John");
+let user3 = new User("Anne");
+*/!*
+
+// what would happen without new!!!
+let user4 = User("Jack");
+console.log(user1);// object
+console.log(user4);// undefined
+```
+
+#### what `new` does to Constructor func?
+```js
+// This is constructor func
+function User(name) { 
+  this.name = name;
+  this.isAdmin = false;
+}
+
+// Below is what new turned constructor func into 
+function User(name) {
+*!*
+  // this = {};  (implicitly)
+*/!*
+
+  // add properties to this
+  this.name = name;
+  this.isAdmin = false;
+
+*!*
+  // return this;  (implicitly)
+*/!*
+}
+```
+
+#### `let user = new function(){...}` is a waste?
+```js run
+// maybe, one line of code is saved, with this expression
+// but such constructor can't be called again in the future
+// don't see why we need to do it !!!
+let user = new function() {
+  this.name = "John";
+  this.isAdmin = false;
+  // ...other code for user creation
+};
+
+console.log(user)
+```
+
+#### Make `new` dispensible
+```js run
+// new.target check whether a func executed with new
+function User() {
+  console.log(new.target);
+}
+
+// without "new":
+*!*
+User(); // undefined
+*/!*
+
+// with "new":
+*!*
+new User(); // function User { ... }
+*/!*
+```
+```js run
+// no more worry about forgetting new!!!
+function User(name) {
+  if (!new.target) { // if you run me without new
+    return new User(name); // ...I will add new for you
+  }
+
+  this.name = name;
+}
+
+let john = User("John"); // redirects call to new User
+alert(john.name); // John
+```
+
+#### Interesting effect of `return` in Constructor
+
+```js run
+function BigUser() {
+
+  this.name = "John";
+
+  return { name: "Godzilla" };  // <-- returns a specified object
+}
+
+console.log( new BigUser().name );  // Godzilla, got that object ^^
+```
+
+
+```js run
+function SmallUser() {
+
+  this.name = "John";
+
+  return; // return this (the default object)
+  // return (a primitive) has the same effect
+}
+
+console.log( new SmallUser().name );  // John
+```
+
+#### new Constructor without parentheses
+
+```js run
+function User() { // no parameters
+  this.name = 'Daniel';
+}
+
+let user1 = new User; // <-- no parentheses is fine 
+let user2 = new User();
+console.log(user1); // content is the same as below
+console.log(user2);
+console.log(user1 == user2); // different memory place
+```
+
+#### add methods to a Constructor function
+
+```js run
+function User(name) {
+  this.name = name;
+
+  this.sayHi = function() {
+    console.log( "My name is: " + this.name );
+  };
+}
+
+*!*
+let john = new User("John");
+*/!*
+
+*!*
+john.sayHi(); // My name is: John
+*/!*
+
+/*
+What is inside john then?
+john = {
+   name: "John",
+   sayHi: function() { ... }
+}
+*/
+```
+
+
+## Original content below
+
 The regular `{...}` syntax allows to create one object. But often we need to create many similar objects, like multiple users or menu items and so on.
 
 That can be done using constructor functions and the `"new"` operator.
