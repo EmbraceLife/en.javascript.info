@@ -1,5 +1,67 @@
 # Methods of primitives
 
+#### primitives vs objects
+```js run
+// there are 6 primitive types: 
+// `string`, `number`, `boolean`, `symbol`, `null` and `undefined`
+// a primitive is a value of a primitive type, light, fast but without methods
+const n = "john"
+console.log(typeof n);
+
+// objects store values and methods, fancy with a cost of memory burdon
+let john = {
+  name: "John", // object has a string as value
+  sayHi: function() { // object has method to use a string
+    console.log(`"Hi ${this.name}!"`);
+  }
+};
+
+john.sayHi(); // an object can have methods
+```
+
+#### primitives with methods without memory burdon
+```js run
+// Naturally for humans to want methods for primitive values to perform
+let str = "Hello";
+
+// JS allows primitive values to access methods of its types
+// string value access type string method toUpperCase
+console.log( str.toUpperCase() ); // HELLO
+// what happens within the line above: 
+// a string object created, which contains the string value
+// such string object of course has access to methods like toUpperCase
+// after perform str.toUpperCase(), the object is deleted immediately
+```
+```js run
+let n = 1.23456;
+
+console.log( n.toFixed(2) ); // 1.23
+```
+
+#### Number/String/Boolean with new creates objects
+
+```js run
+console.log( typeof 0 ); // "number"
+
+console.log( typeof new Number(0) ); // "object"!
+```
+
+```js run
+let zero = new Number(0);
+
+if (zero) { // zero is true, because it's an object
+  console.log( "zero is truthy!?!" );
+}
+```
+
+#### Number/String/Boolean without new is for convertion
+
+```js
+let num = Number("123"); // convert a string to number
+console.log(typeof num);
+```
+
+# Original Content
 JavaScript allows us to work with primitives (strings, numbers, etc.) as if they were objects.
 
 They also provide methods to call as such. We will study those soon, but first we'll see how it works because, of course, primitives are not objects (and here we will make it even clearer).
